@@ -3,11 +3,29 @@
 <head>
   <meta charset="utf-8">
   <title>websocket-chat</title>
+  <!-- heitgtにplus20%する必要 -->
+  <style>
+  .circle {
+    width: 20px;
+    height: 20px;
+    background: black;
+    border-radius: 50%;
+    position: absolute;
+  }
+  .hide{
+    display: none;
+  }
+  </style>
   <script type="text/javascript" src="/socket.io/socket.io.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>WebSocket-Chat</h1>
+      <div id="contentVideo">
+        <div class="circle" id="contentVideoPointer"></div>
+        <img src="https://placehold.jp/640x480.png" alt="">
+      </div>
+      <div>入力中コンテンツ:<span id="inputLogs"></span></div>
       <form class="form-inline" id="sendChat">
         <div class="form-group">
           <label for="msgForm">メッセージ：</label>
@@ -17,15 +35,28 @@
       </form>
       <div id="chatLogs"></div>
   </div>
-
 <script type="text/javascript">
     var socket = io.connect();
-    socket.on("server_to_client", function(data){appendMsg(data.value)});
-
+    socket.on("server_to_client", function(data){
+      appendMsg(data.value);
+      nowType(data.typeMsg);
+      moveCursor(data.grid);
+    });
     function appendMsg(text) {
+      if (text === undefined) return;
       var div = document.createElement('div');
       div.textContent = text;
       document.getElementById("chatLogs").appendChild(div);
+    }
+
+    function nowType(text){
+      var inputLogs = document.getElementById('inputLogs');
+      inputLogs.textContent = text;
+    }
+
+    var pointer = document.getElementById('contentVideoPointer');
+    function moveCursor(grid){
+      pointer.style.transform = `translate( ${grid.x}px, ${grid.y}px )`;
     }
 
     var submit = document.getElementById('sendMessage');
@@ -34,6 +65,27 @@
       socket.emit("client_to_server", {value: message});
       document.getElementById("msgForm").value = "";
     });
+    var input = document.getElementById('msgForm');
+    input.addEventListener("keyup",function(event){
+      socket.emit("client_to_server", {typeMsg:input.value});
+    });
+
+    var image = document.getElementById("contentVideo");
+    image.addEventListener("mousemove",function(event){      console.log(event);
+      var grid = {
+        x: event.offsetX ,
+        y: event.offsetY
+      };
+      socket.emit("client_to_server",{grid:grid})
+    });
+
+    image.addEventListener("mouseover", function(){
+      pointer.classList.remove('hide')
+    });
+    image.addEventListener("mouseout",function(){
+      pointer.classList.add('hide');
+    });
+
 
 </script>
 </body>
